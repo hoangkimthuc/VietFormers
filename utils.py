@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
  
 def getPositionEncoding(seq_len, d, n=10000):
     P = np.zeros((seq_len, d))
@@ -10,5 +9,3 @@ def getPositionEncoding(seq_len, d, n=10000):
             P[k, 2*i+1] = np.cos(k/denominator)
     return P
  
-P = getPositionEncoding(seq_len=4, d=4, n=100)
-print(P)
