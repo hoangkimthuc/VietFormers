@@ -1,1 +1,2 @@
-# transformers_from_scratch
+# TRANFORMER
+Open source implementation of the original transformer paper in Pytorch.
