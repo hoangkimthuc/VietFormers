@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from utils import getPositionEncoding
+
 
 class FFN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, num_layers, dropout_p=0.1):
@@ -65,17 +67,17 @@ class Encoder(nn.Module):
         return z
 
 class MultiEncoder(nn.Module):
-    def __init__(self, Q, K, V, heads, num_encoder, hidden_size=512, num_layers=4, dropout_p=0.1):
+    def __init__(self, Q, K, V, heads, num_encoder, seq_len, hidden_size=512, num_layers=4, dropout_p=0.1):
         super(MultiEncoder, self).__init__()
         self.multiencoder = nn.ModuleList()
         self.num_encoder = num_encoder
         for _ in range(num_encoder):
             self.multiencoder.append(Encoder(Q, K, V, heads, hidden_size, num_layers, dropout_p))
-        self.pos_encoding = None
+        self.pos_encoding = torch.tensor(getPositionEncoding(seq_len=seq_len, d=V)).float()
         self.attention_mask = None
 
     def forward(self, x):
-        z = x
+        z = x + self.pos_encoding
         for i in range(self.num_encoder):
             z = self.multiencoder[i](z)
         return z

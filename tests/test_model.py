@@ -25,7 +25,7 @@ def test_encoder():
 def test_multi_encoder():
     Q, K, V, heads, num_encoder = 10, 10, 10, 5, 3
     x = torch.randn(2, 10)
-    multi_encoder = MultiEncoder(Q, K, V, heads, num_encoder)
+    multi_encoder = MultiEncoder(Q=Q, K=K, V=V, heads=heads, num_encoder=num_encoder, seq_len=2)
     z = multi_encoder(x)
     assert z.shape == (2, 10)
    
