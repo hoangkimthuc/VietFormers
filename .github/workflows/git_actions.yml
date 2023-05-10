@@ -13,6 +13,7 @@ jobs:
       - name: create conda env and install dependencies
         run: |
           conda env create -f env.yml
+          conda init bash
           conda activate transformers_from_scratch
           pip install -r requirements.txt
       - name: Run unit tests
