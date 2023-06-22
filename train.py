@@ -1,1 +1,1 @@
-from model import Encoder
+from model import EncoderBlock
