@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from utils import getPositionEncoding
+
 
 class FFN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, num_layers, dropout_p=0.1):
@@ -40,42 +42,50 @@ class AttentionHead(nn.Module):
         q_k_softmax = F.softmax(q_k_transpose)/torch.sqrt(torch.tensor(k.shape[1]).float())
         z = torch.matmul(q_k_softmax, v)
         return z
-
-class Encoder(nn.Module):
-    def __init__(self, Q, K, V, heads, hidden_size=512, num_layers=4, dropout_p=0.1):
-        super(Encoder, self).__init__()
-        self.ffn = FFN(V, hidden_size, V, num_layers, dropout_p)
-        self.heads = heads
+    
+class MultiHeadAttention(nn.Module):
+    def __init__(self, Q, K, V, num_heads):
+        super(MultiHeadAttention, self).__init__()        
         self.attention_heads = nn.ModuleList()
-        for _ in range(heads):
-            self.attention_heads.append(AttentionHead(Q, K, V))   #create a list of attention heads (multi-head attention)
-        self.linear = nn.Linear(heads*V, V)
+        self.linear = nn.Linear(num_heads*V, V)
+
+        for _ in range(num_heads):
+            self.attention_heads.append(AttentionHead(Q, K, V))
+    def forward(self, x):
+        z = []
+        for i in range(len(self.attention_heads)):
+            z.append(self.attention_heads[i](x))
+        z = torch.cat(z, dim=1)
+        z = self.linear(z)
+        return z
+
+class EncoderBlock(nn.Module):
+    def __init__(self, Q, K, V, num_heads, hidden_size=512, num_layers=4, dropout_p=0.1):
+        super(EncoderBlock, self).__init__()
+        self.ffn = FFN(V, hidden_size, V, num_layers, dropout_p)        
+        self.multi_head_attention = MultiHeadAttention(Q, K, V, num_heads)
         self.layer_norm1 = nn.LayerNorm(V)
         self.layer_norm2 = nn.LayerNorm(V)
     
-    def forward(self, x):
-        z = []
-        for i in range(self.heads):
-            z.append(self.attention_heads[i](x)) #apply attention heads
-        z = torch.cat(z, dim=1)
-        z = self.linear(z)
+    def forward(self, x):     
+        z = self.multi_head_attention(x)
         z = self.layer_norm1(x + z) #residual connection + layer normalization
         z1 = self.ffn(z)
         z = self.layer_norm2(z + z1)
         return z
 
-class MultiEncoder(nn.Module):
-    def __init__(self, Q, K, V, heads, num_encoder, hidden_size=512, num_layers=4, dropout_p=0.1):
-        super(MultiEncoder, self).__init__()
+class Encoder(nn.Module):
+    def __init__(self, Q, K, V, num_heads, num_encoder, max_len=512, hidden_size=512, num_layers=4, dropout_p=0.1):
+        super(Encoder, self).__init__()
         self.multiencoder = nn.ModuleList()
         self.num_encoder = num_encoder
         for _ in range(num_encoder):
-            self.multiencoder.append(Encoder(Q, K, V, heads, hidden_size, num_layers, dropout_p))
-        self.pos_encoding = None
+            self.multiencoder.append(EncoderBlock(Q, K, V, num_heads, hidden_size, num_layers, dropout_p))
+        self.pos_encoding = torch.tensor(getPositionEncoding(seq_len=max_len, d=V)).float()
         self.attention_mask = None
 
     def forward(self, x):
-        z = x
+        z = x + self.pos_encoding
         for i in range(self.num_encoder):
             z = self.multiencoder[i](z)
         return z
