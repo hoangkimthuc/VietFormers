@@ -1,4 +1,7 @@
+#caches
 tests/__pycache__
 __pycache__
 .pytest_cache
 .vscode
+#dummy/draft files
+*draft*
