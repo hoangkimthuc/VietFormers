@@ -1,4 +1,4 @@
-# VietFORMER
+# VietFormers
 Open source implementation of the original transformer paper in Pytorch. The purposes of this repo:
 - Implement the vanilla transformer model from scratch with Pytorch
 - Implement BERT, GPT, and chatGPT based on the vanilla model
