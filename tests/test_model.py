@@ -1,5 +1,10 @@
 import torch
-from model import AttentionHead, EncoderBlock, FFN, Encoder, MultiHeadAttention
+from model import (AttentionHead, 
+                   EncoderBlock, 
+                   FFN, 
+                   Encoder, 
+                   MultiHeadAttention,
+                   PositionalEncoding)
 
 def test_ffn():
     input_size, hidden_size, output_size, num_layers = 10, 20, 10, 4
@@ -31,7 +36,13 @@ def test_encoder_block():
 
 def test_encoder():
     Q, K, V, heads, num_encoder = 10, 10, 10, 5, 3
-    x = torch.randn(3, 2, 10)
-    multi_encoder = Encoder(Q=Q, K=K, V=V, num_attention_heads=heads, num_encoder_blocks=num_encoder, max_len=2)
+    x = torch.randint(0, 50000, (3, 2)) #create 3 sequences of length 2, i.e 3 batches of 2 words
+    multi_encoder = Encoder(Q_dim=Q, K_dim=K, V_dim=V, num_attention_heads=heads, num_encoder_blocks=num_encoder, max_len=2)
     z = multi_encoder(x)
+    assert z.shape == (3, 2, 10)
+
+def test_postional_encoding():
+    x = torch.randn(3, 2, 10)
+    pos_encoding = PositionalEncoding(10)
+    z = pos_encoding(x)
     assert z.shape == (3, 2, 10)
