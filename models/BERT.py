@@ -1,5 +1,6 @@
 from models.vanilla_transformers import Encoder
 from torch import nn
+from torch import Tensor
 
 class BERT(nn.Module):
     def __init__(self, Q_dim:int, K_dim:int, V_dim:int, vocab_size:int, max_seq_len:int=512, num_attention_heads:int=5, num_encoder_blocks:int=3, hidden_size:int=512, num_layers:int=4, dropout_p:float=0.1):
@@ -16,7 +17,10 @@ class BERT(nn.Module):
         self.linear = nn.Linear(V_dim, vocab_size)
         self.dropout = nn.Dropout(dropout_p)
     
-    def forward(self, x):   
+    def forward(self, x: Tensor):
+        """
+        x: (batch_size, sequence_length)
+        """   
         x = self.encoder(x)
         x = self.linear(x)
         x = self.dropout(x)
