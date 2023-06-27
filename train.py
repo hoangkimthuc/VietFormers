@@ -1,1 +1,1 @@
-from model import EncoderBlock
+from models.vanilla_transformers import EncoderBlock

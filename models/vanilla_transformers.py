@@ -78,11 +78,11 @@ class EncoderBlock(nn.Module):
         return z
     
 class Encoder(nn.Module):
-    def __init__(self, Q_dim:int, K_dim:int, V_dim:int, vocab_size:int=50000, num_attention_heads=5, num_encoder_blocks=3, max_len=512, hidden_size=512, num_layers=4, dropout_p=0.1):
+    def __init__(self, Q_dim:int, K_dim:int, V_dim:int, vocab_size:int, num_attention_heads=5, num_encoder_blocks=3, max_seq_len=512, hidden_size=512, num_layers=4, dropout_p=0.1):
         super(Encoder, self).__init__()
         self.encoder = nn.Sequential()
-        self.embedding = nn.Embedding(vocab_size, V_dim)
-        self.pos_encoding = PositionalEncoding(V_dim, dropout_p, max_len)
+        self.embedding = nn.Sequential(nn.Embedding(vocab_size, V_dim), nn.Dropout(dropout_p))
+        self.pos_encoding = PositionalEncoding(V_dim, dropout_p, max_seq_len)
         for _ in range(num_encoder_blocks):
             self.encoder.append(EncoderBlock(Q_dim, K_dim, V_dim, num_attention_heads, hidden_size, num_layers, dropout_p))
 
