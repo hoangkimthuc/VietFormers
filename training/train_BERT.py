@@ -59,7 +59,7 @@ train_data = batchify(train_data, batch_size)  # shape ``[seq_len, batch_size]``
 val_data = batchify(val_data, eval_batch_size)
 test_data = batchify(test_data, eval_batch_size)
 
-bptt = 35
+bptt = 35  # sequence length
 def get_batch(source: Tensor, i: int) -> Tuple[Tensor, Tensor]:
     """
     Args:
@@ -72,14 +72,14 @@ def get_batch(source: Tensor, i: int) -> Tuple[Tensor, Tensor]:
     """
     seq_len = min(bptt, len(source) - 1 - i)
     data = source[i:i+seq_len]
-    target = source[i+1:i+1+seq_len].reshape(-1)
+    target = rearrange(source[i+1:i+1+seq_len], 'seq batch -> batch seq').reshape(-1)
     return data, target
 
 ntokens = len(vocab)  # size of vocabulary
 
-Q, K, V, num_attention_heads, num_encoder_blocks = 10, 10, 10, 5, 3
+Q, K, V, num_attention_heads, num_encoder_blocks = 200, 200, 200, 2, 2
 
-model = BERT(Q_dim=Q, K_dim=K, V_dim=V, vocab_size=ntokens, num_attention_heads=num_attention_heads, num_encoder_blocks=num_encoder_blocks, max_seq_len=bptt, dropout_p=0.1)
+model = BERT(Q_dim=Q, K_dim=K, V_dim=V, vocab_size=ntokens, num_attention_heads=num_attention_heads, num_encoder_blocks=num_encoder_blocks, max_seq_len=bptt, dropout_p=0.2)
 model = model.to(device)
 
 
@@ -125,13 +125,14 @@ def evaluate(model: nn.Module, eval_data: Tensor) -> float:
     with torch.no_grad():
         for i in range(0, eval_data.size(0) - 1, bptt):
             data, targets = get_batch(eval_data, i)
+            data = rearrange(data, 'seq batch -> batch seq')
             seq_len = data.size(0)
             output = model(data)
             output_flat = output.view(-1, ntokens)
             total_loss += seq_len * criterion(output_flat, targets).item()
     return total_loss / (len(eval_data) - 1)
 best_val_loss = float('inf')
-epochs = 3
+epochs = 10
 
 with TemporaryDirectory() as tempdir:
     best_model_params_path = os.path.join(tempdir, "best_model_params.pt")

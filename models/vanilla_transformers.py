@@ -88,7 +88,7 @@ class Encoder(nn.Module):
 
     def forward(self, x:Tensor):
         x = self.embedding(x)
-        x = rearrange(x, 'b s e -> s b e')
+        x = rearrange(x, 'b s e -> s b e') # rearrange to fit positional encoding
         x = self.pos_encoding(x)
         x = rearrange(x, 's b e -> b s e')
         x = self.encoder(x)
