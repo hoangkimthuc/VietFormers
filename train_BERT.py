@@ -143,7 +143,7 @@ def main(cfg) -> None:
     dropout_p = cfg.model.dropout_p
     
     sq_len = cfg.training.sq_len 
-    model = BERT(Q_dim=Q, K_dim=K, V_dim=V, vocab_size=ntokens, num_attention_heads=num_attention_heads, num_encoder_blocks=num_encoder_blocks, max_seq_len=sq_len, dropout_p=dropout_p)
+    model = BERT(emb_dim=Q, emb_dim=K, emb_dim=V, vocab_size=ntokens, num_attention_heads=num_attention_heads, num_encoder_blocks=num_encoder_blocks, max_seq_len=sq_len, dropout_p=dropout_p)
     model = model.to(device)
 
     criterion = nn.CrossEntropyLoss()

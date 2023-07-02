@@ -3,9 +3,9 @@ from torch import nn
 from torch import Tensor
 
 class BERT(nn.Module):
-    def __init__(self, Q_dim:int, K_dim:int, V_dim:int, vocab_size:int, max_seq_len:int=512, num_attention_heads:int=5, num_encoder_blocks:int=3, hidden_size:int=512, num_layers:int=4, dropout_p:float=0.1):
+    def __init__(self, emb_dim:int, vocab_size:int, max_seq_len:int=512, num_attention_heads:int=5, num_encoder_blocks:int=3, hidden_size:int=512, num_layers:int=4, dropout_p:float=0.1):
         super(BERT, self).__init__()
-        self.encoder = Encoder(Q_dim=Q_dim, K_dim=K_dim, V_dim=V_dim, 
+        self.encoder = Encoder(emb_dim=emb_dim,  
                                vocab_size=vocab_size,
                                max_seq_len=max_seq_len,
                                num_attention_heads=num_attention_heads, 
@@ -14,7 +14,7 @@ class BERT(nn.Module):
                                num_layers=num_layers,
                                dropout_p=dropout_p)
 
-        self.linear = nn.Linear(V_dim, vocab_size)
+        self.linear = nn.Linear(emb_dim, vocab_size)
         self.dropout = nn.Dropout(dropout_p)
     
     def forward(self, x: Tensor):
