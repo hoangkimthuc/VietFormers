@@ -6,3 +6,9 @@ __pycache__
 #dummy/draft files
 *draft*
 *dummy*
+
+#output files of hydra
+outputs
+multirun
+
+*.egg-info

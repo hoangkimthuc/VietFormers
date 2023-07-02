@@ -27,7 +27,7 @@ jobs:
 
       - name: install dependencies with pip
         run: |
-          conda activate transformers_from_scratch
+          conda activate VietFormers
           pip install -r requirements.txt     
 
       - name: Run Tests
