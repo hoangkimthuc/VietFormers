@@ -135,15 +135,13 @@ def main(cfg) -> None:
     val_data = batchify(val_data, eval_batch_size)
     test_data = batchify(test_data, eval_batch_size)
 
-    Q = cfg.model.Q_dim
-    K = cfg.model.K_dim
-    V = cfg.model.V_dim
+    emb_dim = cfg.model.emb_dim    
     num_attention_heads = cfg.model.num_attention_heads
     num_encoder_blocks = cfg.model.num_encoder_blocks
     dropout_p = cfg.model.dropout_p
     
     sq_len = cfg.training.sq_len 
-    model = BERT(Q_dim=Q, K_dim=K, V_dim=V, vocab_size=ntokens, num_attention_heads=num_attention_heads, num_encoder_blocks=num_encoder_blocks, max_seq_len=sq_len, dropout_p=dropout_p)
+    model = BERT(emb_dim=emb_dim, vocab_size=ntokens, num_attention_heads=num_attention_heads, num_encoder_blocks=num_encoder_blocks, max_seq_len=sq_len, dropout_p=dropout_p)
     model = model.to(device)
 
     criterion = nn.CrossEntropyLoss()

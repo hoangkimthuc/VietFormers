@@ -29,12 +29,12 @@ class FFN(nn.Module):
 
 # Single self-attention head
 class AttentionHead(nn.Module):
-    def __init__(self, Q_dim:int, K_dim:int, V_dim:int):
+    def __init__(self, emb_dim:int):
         super(AttentionHead, self).__init__()
-        self.Q = nn.Linear(Q_dim, Q_dim, bias=False)
-        self.K = nn.Linear(K_dim, K_dim, bias=False)
-        self.V = nn.Linear(V_dim, V_dim, bias=False)
-        self.V_dim = V_dim
+        self.Q = nn.Linear(emb_dim, emb_dim, bias=False)
+        self.K = nn.Linear(emb_dim, emb_dim, bias=False)
+        self.V = nn.Linear(emb_dim, emb_dim, bias=False)
+        self.V_dim = emb_dim
     
     def forward(self, x:Tensor):
         q = self.Q(x)
@@ -47,13 +47,13 @@ class AttentionHead(nn.Module):
         return z
     
 class MultiHeadAttention(nn.Module):
-    def __init__(self, Q_dim:int, K_dim:int, V_dim:int, num_attention_heads:int):
+    def __init__(self, emb_dim:int, num_attention_heads:int):
         super(MultiHeadAttention, self).__init__()        
         self.attention_heads = nn.ModuleList()
-        self.linear = nn.Linear(num_attention_heads*V_dim, V_dim)
+        self.linear = nn.Linear(num_attention_heads*emb_dim, emb_dim)
 
         for _ in range(num_attention_heads):
-            self.attention_heads.append(AttentionHead(Q_dim, K_dim, V_dim))
+            self.attention_heads.append(AttentionHead(emb_dim))
     def forward(self, x:Tensor):
         z = []
         for i in range(len(self.attention_heads)):
@@ -63,12 +63,12 @@ class MultiHeadAttention(nn.Module):
         return z
 
 class EncoderBlock(nn.Module):
-    def __init__(self, Q_dim:int, K_dim:int, V_dim:int, num_heads:int, hidden_size=512, num_layers=4, dropout_p=0.1):
+    def __init__(self, emb_dim:int, num_attention_heads:int, hidden_size:int=512, num_layers:int=4, dropout_p=0.1):
         super(EncoderBlock, self).__init__()
-        self.ffn = FFN(V_dim, hidden_size, V_dim, num_layers, dropout_p)        
-        self.multi_head_attention = MultiHeadAttention(Q_dim, K_dim, V_dim, num_heads)
-        self.layer_norm1 = nn.LayerNorm(V_dim)
-        self.layer_norm2 = nn.LayerNorm(V_dim)
+        self.ffn = FFN(emb_dim, hidden_size, emb_dim, num_layers, dropout_p)        
+        self.multi_head_attention = MultiHeadAttention(emb_dim, num_attention_heads)
+        self.layer_norm1 = nn.LayerNorm(emb_dim)
+        self.layer_norm2 = nn.LayerNorm(emb_dim)
     
     def forward(self, x:Tensor):     
         z = self.multi_head_attention(x)
@@ -78,13 +78,13 @@ class EncoderBlock(nn.Module):
         return z
     
 class Encoder(nn.Module):
-    def __init__(self, Q_dim:int, K_dim:int, V_dim:int, vocab_size:int, num_attention_heads=5, num_encoder_blocks=3, max_seq_len=512, hidden_size=512, num_layers=4, dropout_p=0.1):
+    def __init__(self, emb_dim:int, vocab_size:int, num_attention_heads=5, num_encoder_blocks=3, max_seq_len=512, hidden_size=512, num_layers=4, dropout_p=0.1):
         super(Encoder, self).__init__()
         self.encoder = nn.Sequential()
-        self.embedding = nn.Sequential(nn.Embedding(vocab_size, V_dim), nn.Dropout(dropout_p))
-        self.pos_encoding = PositionalEncoding(V_dim, dropout_p, max_seq_len)
+        self.embedding = nn.Sequential(nn.Embedding(vocab_size, emb_dim), nn.Dropout(dropout_p))
+        self.pos_encoding = PositionalEncoding(emb_dim, dropout_p, max_seq_len)
         for _ in range(num_encoder_blocks):
-            self.encoder.append(EncoderBlock(Q_dim, K_dim, V_dim, num_attention_heads, hidden_size, num_layers, dropout_p))
+            self.encoder.append(EncoderBlock(emb_dim, num_attention_heads, hidden_size, num_layers, dropout_p))
 
     def forward(self, x:Tensor):
         x = self.embedding(x)
