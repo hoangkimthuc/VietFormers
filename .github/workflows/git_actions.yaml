@@ -22,7 +22,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           auto-activate-base: false
-          activate-environment: transformers_from_scratch
+          activate-environment: VietFormers
           environment-file: environment.yaml  
 
       - name: install dependencies with pip
