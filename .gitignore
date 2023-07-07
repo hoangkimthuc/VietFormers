@@ -11,4 +11,8 @@ __pycache__
 outputs
 multirun
 
+#package setup info
 *.egg-info
+
+#wandb
+wandb
