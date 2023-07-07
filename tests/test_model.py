@@ -1,5 +1,5 @@
 import torch
-from models.vanilla_transformers import (AttentionHead, 
+from models.vanilla_transformers import ( 
                    EncoderBlock, 
                    FFN, 
                    Encoder, 
@@ -14,19 +14,18 @@ def test_ffn():
     z = ffn(x)
     assert z.shape == (2, 10)
 
-def test_attention_head():
-    emb_dim = 10
-    x = torch.randn(3, 2, 10) #batch size, sequence len, embedding size
-    attention_head = AttentionHead(emb_dim)
-    z = attention_head(x)
-    assert z.shape == (3, 2, 10)
+# def test_attention_head():
+#     emb_dim = 10
+#     x = torch.randn(3, 2, 10) #batch size, sequence len, embedding size
+#     attention_head = AttentionHead(emb_dim)
+#     z = attention_head(x)
+#     assert z.shape == (3, 2, 10)
     
 def test_multi_head_attention():
-    emb_dim, num_attention_heads = 10, 5
-    x = torch.randn(3, 2, 10)
-    multi_attention = MultiHeadAttention(emb_dim, num_attention_heads)
+    x = torch.randn(3, 2, 200)
+    multi_attention = MultiHeadAttention()
     z = multi_attention(x)
-    assert z.shape == (3, 2, 10)
+    assert z.shape == (3, 2, 200)
 
 def test_encoder_block():
     emb_dim, num_attention_heads = 10, 5
