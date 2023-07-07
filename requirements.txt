@@ -8,3 +8,4 @@ portalocker
 torchtext==0.15.2
 hydra-core==1.3.2
 omegaconf==2.3.0
+wandb==0.15.4

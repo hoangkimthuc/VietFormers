@@ -10,7 +10,12 @@ training:
   train_batch_size: 20
   eval_batch_size: 10
   sq_len: 35
-  num_epochs: 3
+  num_epochs: 1
   lr: 5
-  log_interval: 200
-
+  log_interval: 1
+wandb:
+  is_enabled: True
+  project: VietFormers
+  run_name: training_BERT
+  watch_model: True
+  log_freq: 1
