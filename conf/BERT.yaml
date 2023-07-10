@@ -1,7 +1,7 @@
 model:
   emb_dim: 200
   max_seq_len: 512
-  num_attention_heads: 5
+  num_attention_heads: 2
   attn_pdrop: 0.2
   resid_pdrop: 0.2
   num_encoder_blocks: 2
