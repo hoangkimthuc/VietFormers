@@ -29,43 +29,6 @@ class FFN(nn.Module):
     def forward(self, x:Tensor):
         return self.ffn(x)
 
-# Single self-attention head
-# class AttentionHead(nn.Module):
-#     def __init__(self, emb_dim:int):
-#         super(AttentionHead, self).__init__()
-#         self.Q = nn.Linear(emb_dim, emb_dim, bias=False)
-#         self.K = nn.Linear(emb_dim, emb_dim, bias=False)
-#         self.V = nn.Linear(emb_dim, emb_dim, bias=False)
-#         self.V_dim = emb_dim
-    
-#     def forward(self, x:Tensor):
-#         q = self.Q(x)
-#         k = self.K(x)
-#         v = self.V(x)
-#         k_transpose = rearrange(k, 'b s e -> b e s') #b is batch size, s is sequence length, e is embedding size
-#         q_k_transpose = torch.bmm(q, k_transpose)
-#         q_k_softmax = F.softmax(q_k_transpose/(self.V_dim**0.5), dim=2)
-#         z = torch.bmm(q_k_softmax, v)
-#         return z
-
-
-
-    
-# class MultiHeadAttention(nn.Module):
-#     def __init__(self, emb_dim:int, num_attention_heads:int):
-#         super(MultiHeadAttention, self).__init__()        
-#         self.attention_heads = nn.ModuleList()
-#         self.linear = nn.Linear(num_attention_heads*emb_dim, emb_dim)
-
-#         for _ in range(num_attention_heads):
-#             self.attention_heads.append(AttentionHead(emb_dim))
-#     def forward(self, x:Tensor):
-#         z = []
-#         for i in range(len(self.attention_heads)):
-#             z.append(self.attention_heads[i](x))
-#         z = torch.cat(z, dim=2)
-#         z = self.linear(z)
-#         return z
 class MultiHeadAttention(nn.Module):
     """
     A vanilla multi-head masked self-attention layer with a projection at the end.
@@ -81,39 +44,37 @@ class MultiHeadAttention(nn.Module):
         super().__init__()
 
         config = self.get_default_cfg()
-        assert config.model.emb_dim % config.model.num_attention_heads == 0
+        # assert config.model.emb_dim % config.model.num_attention_heads == 0
         # key, query, value projections for all heads, but in a batch
-        self.c_attn = nn.Linear(config.model.emb_dim, 3 * config.model.emb_dim)
+        self.c_attn = nn.Linear(config.model.emb_dim, 3 * config.model.num_attention_heads*config.model.emb_dim)
         # output projection
-        self.c_proj = nn.Linear(config.model.emb_dim, config.model.emb_dim)
+        self.c_proj = nn.Linear(config.model.num_attention_heads*config.model.emb_dim, config.model.emb_dim)
         # regularization
-        # self.attn_dropout = nn.Dropout(config.attn_pdrop)
-        # self.resid_dropout = nn.Dropout(config.resid_pdrop)
-        # causal mask to ensure that attention is only applied to the left in the input sequence
-        # self.register_buffer("bias", torch.tril(torch.ones(config.block_size, config.block_size))
-        #                              .view(1, 1, config.block_size, config.block_size))
+        self.attn_dropout = nn.Dropout(config.model.attn_pdrop)
+        self.resid_dropout = nn.Dropout(config.model.resid_pdrop)
+        
         self.n_head = config.model.num_attention_heads
         self.n_embd = config.model.emb_dim
 
     def forward(self, x):
+        config = self.get_default_cfg()
         B, T, C = x.size() # batch size, sequence length, embedding dimensionality (n_embd)
 
         # calculate query, key, values for all heads in batch and move head forward to be the batch dim
-        q, k ,v  = self.c_attn(x).split(self.n_embd, dim=2)
-        k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
-        q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
-        v = v.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
+        q, k ,v  = self.c_attn(x).split(config.model.num_attention_heads*self.n_embd, dim=2)
+        k = k.view(B, T, self.n_head, C ).transpose(1, 2) # (B, nh, T, hs)
+        q = q.view(B, T, self.n_head, C ).transpose(1, 2) # (B, nh, T, hs)
+        v = v.view(B, T, self.n_head, C ).transpose(1, 2) # (B, nh, T, hs)
 
         # causal self-attention; Self-attend: (B, nh, T, hs) x (B, nh, hs, T) -> (B, nh, T, T)
         att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
-        # att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
         att = F.softmax(att, dim=-1)
-        # att = self.attn_dropout(att)
+        att = self.attn_dropout(att)
         y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
-        y = y.transpose(1, 2).contiguous().view(B, T, C) # re-assemble all head outputs side by side
+        y = y.transpose(1, 2).contiguous().view(B, T, config.model.num_attention_heads*C) # re-assemble all head outputs side by side
 
         # output projection
-        # y = self.resid_dropout(self.c_proj(y))
+        y = self.resid_dropout(self.c_proj(y))
         return y
 
 

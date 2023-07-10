@@ -28,11 +28,11 @@ def test_multi_head_attention():
     assert z.shape == (3, 2, 200)
 
 def test_encoder_block():
-    emb_dim, num_attention_heads = 10, 5
-    x = torch.randn(3, 2, 10)
+    emb_dim, num_attention_heads = 200, 2
+    x = torch.randn(3, 2, 200)
     multi_attention = EncoderBlock(emb_dim, num_attention_heads)
     z = multi_attention(x)
-    assert z.shape == (3, 2, 10)
+    assert z.shape == (3, 2, 200)
 
 def test_encoder():
     emb_dim, num_attention_heads, num_encoder_blocks = 10, 5, 3
