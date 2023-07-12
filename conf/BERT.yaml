@@ -2,12 +2,15 @@ model:
   emb_dim: 200
   max_seq_len: 512
   num_attention_heads: 2
-  attn_pdrop: 0.2
-  resid_pdrop: 0.2
+  attn_pdrop: 0.
+  linear_proj_pdrop: 0.
   num_encoder_blocks: 2
   hidden_size: 20
   num_layers: 2
-  dropout_p: 0.2
+  ffn_pdrop: 0.
+  pos_emb_pdrop: 0.
+  emb_pdrop: 0.
+  bert_pdrop: 0.
 training:
   train_batch_size: 20
   eval_batch_size: 10
@@ -19,5 +22,5 @@ wandb:
   is_enabled: True
   project: VietFormers
   run_name: training_BERT
-  watch_model: False
-  log_freq: 1
+  watch_model: True
+  log_freq: 200
