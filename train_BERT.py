@@ -93,7 +93,7 @@ def train(model: nn.Module, train_data: Tensor, val_data: Tensor,
                 total_loss = 0
                 start_time = time.time()
                 if wandb_enabled: 
-                    wandb.log({"loss": loss}, step = batch)
+                    wandb.log({"loss": cur_loss}, step = batch + (epoch-1)*num_batches)
             
                 
             
@@ -147,10 +147,18 @@ def main(cfg) -> None:
     
     
     model = BERT(emb_dim=cfg.model.emb_dim, 
-                 vocab_size=ntokens, 
-                 num_attention_heads=cfg.model.num_attention_heads, 
-                 num_encoder_blocks=cfg.model.num_encoder_blocks, 
-                 dropout_p=cfg.model.dropout_p)
+                num_attention_heads=cfg.model.num_attention_heads,
+                hidden_size=cfg.model.hidden_size, 
+                num_layers=cfg.model.num_layers,
+                ffn_pdrop=cfg.model.ffn_pdrop, 
+                attn_pdrop=cfg.model.attn_pdrop,
+                linear_proj_pdrop=cfg.model.linear_proj_pdrop,
+                bert_pdrop=cfg.model.bert_pdrop,
+                pos_emb_pdrop= cfg.model.pos_emb_pdrop,
+                emb_pdrop=cfg.model.emb_pdrop,
+                vocab_size=ntokens, 
+                max_seq_len=cfg.model.max_seq_len,
+                num_encoder_blocks=cfg.model.num_encoder_blocks)
     model = model.to(device)
 
     criterion = nn.CrossEntropyLoss()
