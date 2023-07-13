@@ -1,22 +1,22 @@
 model:
-  emb_dim: 200
+  emb_dim: 256
   max_seq_len: 512
-  num_attention_heads: 2
-  attn_pdrop: 0.
-  linear_proj_pdrop: 0.
-  num_encoder_blocks: 2
+  num_attention_heads: 6
+  attn_pdrop: 0.2
+  linear_proj_pdrop: 0.2
+  num_encoder_blocks: 6
   hidden_size: 20
   num_layers: 2
-  ffn_pdrop: 0.
-  pos_emb_pdrop: 0.
-  emb_pdrop: 0.
-  bert_pdrop: 0.
+  ffn_pdrop: 0.2
+  pos_emb_pdrop: 0.2
+  emb_pdrop: 0.2
+  bert_pdrop: 0.2
 training:
-  train_batch_size: 20
-  eval_batch_size: 10
-  sq_len: 35
-  num_epochs: 3
-  lr: 5
+  train_batch_size: 32
+  eval_batch_size: 64
+  sq_len: 64
+  num_epochs: 1000
+  lr: 0.01
   log_interval: 200
 wandb:
   is_enabled: True

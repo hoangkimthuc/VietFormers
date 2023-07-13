@@ -53,15 +53,19 @@ def get_batch(source: Tensor, i: int, sq_len: int) -> Tuple[Tensor, Tensor]:
         target has shape ``[seq_len * batch_size]``
     """
     sq_len = min(sq_len, len(source) - 1 - i)
-    data = source[i:i+sq_len]
-    target = rearrange(source[i+1:i+1+sq_len], 'seq batch -> batch seq').reshape(-1)
+    data_and_target = rearrange(source[i:i+sq_len+1], 'seq batch -> batch seq')
+    data = data_and_target[: , :sq_len]
+    #Target is the next word of each sequence in the batch
+    target = data_and_target[:, -1]
     return data, target
 
 def train(model: nn.Module, train_data: Tensor, val_data: Tensor, 
           num_epochs:int, criterion, lr:Union[float, int], 
           optimizer, scheduler, ntokens:int, sq_len:int,
-          log_interval: int, wandb_enabled: bool) -> None:
+          log_interval: int, wandb_enabled: bool,
+          vocab, tokenizer) -> None:
     for epoch in range(1, num_epochs + 1):
+       
         epoch_start_time = time.time()
         model.train()  # turn on train mode
         total_loss = 0.
@@ -71,10 +75,10 @@ def train(model: nn.Module, train_data: Tensor, val_data: Tensor,
         num_batches = len(train_data) // sq_len
         for batch, i in enumerate(range(0, train_data.size(0) - 1, sq_len)):
             data, targets = get_batch(train_data, i, sq_len)
-            data = rearrange(data, 'seq batch -> batch seq')
+            if data.shape[1] != sq_len:
+                continue
             output = model(data)
-            output_flat = output.view(-1, ntokens)
-            loss = criterion(output_flat, targets)
+            loss = criterion(output, targets)
 
             optimizer.zero_grad()
             loss.backward()
@@ -93,10 +97,18 @@ def train(model: nn.Module, train_data: Tensor, val_data: Tensor,
                 total_loss = 0
                 start_time = time.time()
                 if wandb_enabled: 
-                    wandb.log({"loss": cur_loss}, step = batch + (epoch-1)*num_batches)
+                    wandb.log({"loss": cur_loss}, step = batch + (epoch-1)*num_batches)           
             
-                
-            
+        context = '''This is the reason why artificial intelligence is so important. 
+        This technology is going to change the world in ways we can't even imagine. 
+        For example, it will be able to help us solve problems that we can't solve today. 
+        It will also be able to help us make better decisions. 
+        Also, this technology will change the way we think about ourselves.'''
+        x = torch.tensor(vocab(tokenizer(context)))[None,...].to(device)
+        y = model.generate(x, 500, seq_len=sq_len).squeeze().tolist()
+        completion = ' '.join(vocab.lookup_tokens(y))
+        print(completion)
+        
         val_loss = evaluate(model, val_data,criterion,sq_len,ntokens)
         val_ppl = math.exp(val_loss)
         
@@ -117,7 +129,8 @@ def evaluate(model: nn.Module, eval_data: Tensor, criterion, sq_len:int, ntokens
     with torch.no_grad():
         for i in range(0, eval_data.size(0) - 1, sq_len):
             data, targets = get_batch(eval_data, i, sq_len)
-            data = rearrange(data, 'seq batch -> batch seq')
+            if data.shape[1] != sq_len:
+                continue
             seq_len = data.size(0)
             output = model(data)
             output_flat = output.view(-1, ntokens)
@@ -165,7 +178,7 @@ def main(cfg) -> None:
 
      # The number of epochs
     optimizer = torch.optim.SGD(model.parameters(), lr=cfg.training.lr)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 100, gamma=0.99)
 
     #Add wandb for logging training loss and validation loss
     current_datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -195,7 +208,9 @@ def main(cfg) -> None:
           ntokens=ntokens, 
           sq_len=cfg.training.sq_len ,
           log_interval=cfg.training.log_interval,
-          wandb_enabled=cfg.wandb.is_enabled)
+          wandb_enabled=cfg.wandb.is_enabled,
+          vocab=vocab,
+          tokenizer=tokenizer,)
 
 
 if __name__ == "__main__":
