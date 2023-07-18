@@ -14,9 +14,11 @@ from torchtext.data.utils import get_tokenizer
 from torchtext.vocab import build_vocab_from_iterator
 
 from einops import rearrange
+from utils import draw_histogram
 
 import time
-
+from dotenv import load_dotenv
+load_dotenv()
 # *** Train BERT on wikitext-2 dataset ***
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -64,8 +66,9 @@ def train(model: nn.Module, train_data: Tensor, val_data: Tensor,
           optimizer, scheduler, ntokens:int, sq_len:int,
           log_interval: int, wandb_enabled: bool,
           vocab, tokenizer) -> None:
-    for epoch in range(1, num_epochs + 1):
-       
+    count = 0
+    best_val_loss = float('inf')
+    for epoch in range(1, num_epochs + 1):       
         epoch_start_time = time.time()
         model.train()  # turn on train mode
         total_loss = 0.
@@ -79,7 +82,6 @@ def train(model: nn.Module, train_data: Tensor, val_data: Tensor,
                 continue
             output = model(data)
             loss = criterion(output, targets)
-
             optimizer.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
@@ -92,26 +94,33 @@ def train(model: nn.Module, train_data: Tensor, val_data: Tensor,
                 cur_loss = total_loss / log_interval
                 ppl = math.exp(cur_loss)
                 print(f'| epoch {epoch:3d} | {batch:5d}/{num_batches:5d} batches | '
-                    f'lr {lr:02.2f} | ms/batch {ms_per_batch:5.2f} | '
+                    f'lr {lr:02.5f} | ms/batch {ms_per_batch:5.2f} | '
                     f'loss {cur_loss:5.2f} | ppl {ppl:8.2f}')
                 total_loss = 0
                 start_time = time.time()
                 if wandb_enabled: 
                     wandb.log({"loss": cur_loss}, step = batch + (epoch-1)*num_batches)           
-            
-        context = '''This is the reason why artificial intelligence is so important. 
-        This technology is going to change the world in ways we can't even imagine. 
-        For example, it will be able to help us solve problems that we can't solve today. 
-        It will also be able to help us make better decisions. 
-        Also, this technology will change the way we think about ourselves.'''
+        
+        context = '''The government is an organization which provides rules and protection to the people it governs.
+        Also, it is a system of ruling the people. The government has a legislature, executive and a judiciary.
+        The government is a body that has the power to make and enforce laws for a country or community.
+        The government has the power to make laws, to enforce them and to settle disputes about them.'''
         x = torch.tensor(vocab(tokenizer(context)))[None,...].to(device)
-        y = model.generate(x, 500, seq_len=sq_len).squeeze().tolist()
+        y = model.generate(x, 200, seq_len=sq_len, top_k=10, do_sample=True).squeeze().tolist()
         completion = ' '.join(vocab.lookup_tokens(y))
         print(completion)
         
         val_loss = evaluate(model, val_data,criterion,sq_len,ntokens)
         val_ppl = math.exp(val_loss)
-        
+
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            # torch.save(model.state_dict(), "best_model_params.pt")
+        else:
+            count += 1
+        if count == 5:
+            print("Early stopping")
+            break        
         if wandb_enabled:
             wandb.log({"val_loss": val_loss, "epoch": epoch})
             wandb.log({"val_ppl": val_ppl, "epoch": epoch})
@@ -122,7 +131,7 @@ def train(model: nn.Module, train_data: Tensor, val_data: Tensor,
             f'valid loss {val_loss:5.2f} | valid ppl {val_ppl:8.2f}')
         print('-' * 89)
         scheduler.step()
-
+    
 def evaluate(model: nn.Module, eval_data: Tensor, criterion, sq_len:int, ntokens:int,) -> float:
     model.eval()  # turn on evaluation mode
     total_loss = 0.
@@ -171,7 +180,8 @@ def main(cfg) -> None:
                 emb_pdrop=cfg.model.emb_pdrop,
                 vocab_size=ntokens, 
                 max_seq_len=cfg.model.max_seq_len,
-                num_encoder_blocks=cfg.model.num_encoder_blocks)
+                num_encoder_blocks=cfg.model.num_encoder_blocks,
+                sq_len=cfg.training.sq_len,)
     model = model.to(device)
 
     criterion = nn.CrossEntropyLoss()
@@ -192,7 +202,7 @@ def main(cfg) -> None:
         wandb.define_metric("val_loss", step_metric="epoch")
         wandb.define_metric("val_ppl", step_metric="epoch")
         if cfg.wandb.watch_model:
-            wandb.watch(model, log="gradients", 
+            wandb.watch(model, log="all", 
                         criterion=criterion, 
                         log_freq=cfg.wandb.log_freq, 
                         log_graph=True)
@@ -210,7 +220,7 @@ def main(cfg) -> None:
           log_interval=cfg.training.log_interval,
           wandb_enabled=cfg.wandb.is_enabled,
           vocab=vocab,
-          tokenizer=tokenizer,)
+          tokenizer=tokenizer,) 
 
 
 if __name__ == "__main__":

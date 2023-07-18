@@ -22,7 +22,7 @@ class BERT(nn.Module):
                  hidden_size:int, num_layers:int, ffn_pdrop:float, 
                  attn_pdrop:float, linear_proj_pdrop:float, 
                  pos_emb_pdrop:float, emb_pdrop:float, bert_pdrop:float,
-                 vocab_size:int, max_seq_len:int, num_encoder_blocks:int):
+                 vocab_size:int, max_seq_len:int, sq_len:int, num_encoder_blocks:int):
         super(BERT, self).__init__()
         self.encoder = Encoder(emb_dim=emb_dim, num_attention_heads=num_attention_heads,
                             hidden_size=hidden_size, num_layers=num_layers,
@@ -31,7 +31,7 @@ class BERT(nn.Module):
                             pos_emb_pdrop= pos_emb_pdrop, emb_pdrop=emb_pdrop,
                             vocab_size=vocab_size, max_seq_len=max_seq_len, 
                             num_encoder_blocks=num_encoder_blocks)
-        self.mlm_head = MLMHead(emb_dim=emb_dim, vocab_size=vocab_size, sq_len=64)
+        self.mlm_head = MLMHead(emb_dim=emb_dim, vocab_size=vocab_size, sq_len=sq_len)
         self.bert_pdrop = nn.Dropout(bert_pdrop)
     
     def forward(self, x: Tensor):
