@@ -1,3 +1,12 @@
+#contain wandb keys
+run_BERT_training.sh
+
+#visualizations
+visualizations
+
+#model weights
+*.pt
+*.pth
 #caches
 tests/__pycache__
 __pycache__

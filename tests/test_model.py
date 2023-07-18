@@ -6,6 +6,8 @@ from models.vanilla_transformers import (
                    MultiHeadAttention,
                    PositionalEncoding)
 from models.BERT import BERT
+from hydra import initialize, compose
+
 
 def test_ffn():
     input_size, hidden_size, output_size, num_layers, ffn_pdrop = 10, 20, 10, 4, 0.2
@@ -60,3 +62,6 @@ def test_postional_encoding():
     pos_encoding = PositionalEncoding(10, pos_emb_pdrop, max_seq_len)
     z = pos_encoding(x)
     assert z.shape == (3, 2, 10)
+
+def test_initializtion_is_normal():
+    assert True
